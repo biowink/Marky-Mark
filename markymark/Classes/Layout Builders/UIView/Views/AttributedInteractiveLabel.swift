@@ -31,7 +31,9 @@ open class AttributedInteractiveLabel: UILabel {
         }
     }
 
-    public init(){
+    public var urlOpener: URLOpener = DefaultURLOpener()
+
+    public init() {
         super.init(frame: CGRect())
         configureViewProperties()
     }
@@ -46,17 +48,17 @@ open class AttributedInteractiveLabel: UILabel {
         configureViewProperties()
     }
 
-    @objc func didTap(_ tapGesture:UITapGestureRecognizer) {
+    @objc func didTap(_ tapGesture: UITapGestureRecognizer) {
         guard let view = tapGesture.view else { return }
 
         let locationInView = tapGesture.location(in: view)
         if let url = getUrlAtLocationInView(locationInView) {
-            UIApplication.shared.openURL(url)
+            urlOpener.open(url: url)
         }
 
     }
 
-    //MARK: Private
+    // MARK: Private
 
     /**
      Tries to find a link attribute in the attributed text of the label at the given point
@@ -66,10 +68,10 @@ open class AttributedInteractiveLabel: UILabel {
      - returns: nil or the NSURL found at the given point
      */
 
-    fileprivate func getUrlAtLocationInView(_ locationInView: CGPoint) -> URL?{
+    private func getUrlAtLocationInView(_ locationInView: CGPoint) -> URL? {
         guard let attributedText = attributedText else { return nil }
 
-        var result: URL? = nil
+        var result: URL?
 
         let indexOfCharacter = indexOfCharacterAtPoint(locationInView, attributedString: attributedText)
 
@@ -92,15 +94,15 @@ open class AttributedInteractiveLabel: UILabel {
      - returns: The index of the character that was found at the given point
      */
 
-    fileprivate func indexOfCharacterAtPoint(_ point: CGPoint, attributedString: NSAttributedString) -> Int {
+    private func indexOfCharacterAtPoint(_ point: CGPoint, attributedString: NSAttributedString) -> Int {
         let textContainer = getTextContainer()
-        
+
         let layoutManager = NSLayoutManager()
         layoutManager.addTextContainer(textContainer)
-        
+
         let textStorage = NSTextStorage(attributedString: attributedString)
         textStorage.addLayoutManager(layoutManager)
-        
+
         return layoutManager.characterIndex(for: point, in: textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
     }
 
@@ -111,15 +113,15 @@ open class AttributedInteractiveLabel: UILabel {
      - returns: NSTextContainer of the current view size
      */
 
-    fileprivate func getTextContainer() -> NSTextContainer {
+    private func getTextContainer() -> NSTextContainer {
 
         /// Height should be any size that's at least bigger than the actual label size
         let height = frame.size.height + 100
 
-        let textContainer = NSTextContainer(size: CGSize(width: frame.size.width , height: height))
-        textContainer.lineFragmentPadding = 0.0;
-        textContainer.lineBreakMode = lineBreakMode;
-        textContainer.maximumNumberOfLines = numberOfLines;
+        let textContainer = NSTextContainer(size: CGSize(width: frame.size.width, height: height))
+        textContainer.lineFragmentPadding = 0.0
+        textContainer.lineBreakMode = lineBreakMode
+        textContainer.maximumNumberOfLines = numberOfLines
 
         return textContainer
     }
@@ -128,9 +130,9 @@ open class AttributedInteractiveLabel: UILabel {
 extension AttributedInteractiveLabel {
 
     public func configureViewProperties() {
-        isUserInteractionEnabled = true;
+        isUserInteractionEnabled = true
         numberOfLines = 0
-        addGestureRecognizer(UITapGestureRecognizer(target:self, action:#selector(didTap(_:))));
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTap(_:))))
     }
 }
 
@@ -149,14 +151,14 @@ private extension NSMutableAttributedString {
         if let attributedStringToEnumerate = self.mutableCopy() as? NSMutableAttributedString {
 
             attributedStringToEnumerate.enumerateAttribute(.link, in: attributedStringToEnumerate.fullRange(), options: []) {
-                (value, range, stop) in
+                (value, range, _) in
 
                 self.removeAttribute(.link, range: range)
                 result.append((range, value as? URL))
             }
         }
-        
+
         return result
-        
+
     }
 }

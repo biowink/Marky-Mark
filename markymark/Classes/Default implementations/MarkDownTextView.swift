@@ -13,9 +13,11 @@ public enum MarkDownConfiguration {
 }
 
 @IBDesignable
-public class MarkDownTextView: UIView {
+open class MarkDownTextView: UIView {
 
-    public var styling: DefaultStyling
+    public var onDidConvertMarkDownItemToView:((_ markDownItem: MarkDownItem, _ view: UIView) -> Void)?
+
+    public private(set) var styling: DefaultStyling
 
     @IBInspectable
     public var text: String? = nil {
@@ -24,11 +26,18 @@ public class MarkDownTextView: UIView {
         }
     }
 
+    public var urlOpener: URLOpener? {
+        didSet {
+            (viewConfiguration as? MarkDownAsViewViewConfiguration)?.urlOpener = urlOpener
+            render(withMarkdownText: text)
+        }
+    }
+
     fileprivate var markDownView: UIView?
     fileprivate var markDownItems: [MarkDownItem] = []
     private let markyMark: MarkyMark
 
-    fileprivate var viewConfiguration: CanConfigureViews?
+    private var viewConfiguration: CanConfigureViews?
 
     public init(markDownConfiguration: MarkDownConfiguration = .view, flavor: Flavor = ContentfulFlavor(), styling: DefaultStyling = DefaultStyling()) {
 
@@ -41,7 +50,13 @@ public class MarkDownTextView: UIView {
 
         switch markDownConfiguration {
         case .view:
-            viewConfiguration = MarkDownAsViewViewConfiguration(owner: self)
+            let markDownToViewConfiguration = MarkDownAsViewViewConfiguration(owner: self)
+            markDownToViewConfiguration.onDidConvertMarkDownItemToView = {
+                [weak self] markDownItem, view in
+                self?.onDidConvertMarkDownItemToView?(markDownItem, view)
+            }
+
+            viewConfiguration = markDownToViewConfiguration
         case .attributedString:
             viewConfiguration = MarkDownAsAttributedStringViewConfiguration(owner: self)
         }
@@ -69,6 +84,10 @@ public class MarkDownTextView: UIView {
         viewConfiguration = MarkDownAsViewViewConfiguration(owner: self)
     }
 
+    public func add(rule: Rule) {
+        markyMark.addRule(rule)
+    }
+
     private func render(withMarkdownText markdownText: String?) {
         markDownView?.removeFromSuperview()
 
@@ -82,7 +101,10 @@ public class MarkDownTextView: UIView {
     }
 }
 
-private struct MarkDownAsViewViewConfiguration: CanConfigureViews {
+private class MarkDownAsViewViewConfiguration: CanConfigureViews {
+
+    var urlOpener: URLOpener?
+    var onDidConvertMarkDownItemToView:((_ markDownItem: MarkDownItem, _ view: UIView) -> Void)?
 
     private weak var owner: MarkDownTextView?
 
@@ -92,8 +114,13 @@ private struct MarkDownAsViewViewConfiguration: CanConfigureViews {
 
     func configureViewProperties() {
         guard let owner = owner else { return }
-        let configuration = MarkdownToViewConverterConfiguration(styling: owner.styling)
+        let configuration = MarkdownToViewConverterConfiguration(styling: owner.styling, urlOpener: urlOpener)
         let converter = MarkDownConverter(configuration: configuration)
+
+        converter.didConvertElement = {
+            [weak self] markDownItem, view in
+            self?.onDidConvertMarkDownItemToView?(markDownItem, view)
+        }
 
         owner.markDownView = converter.convert(owner.markDownItems)
         owner.markDownView?.isUserInteractionEnabled = true
@@ -108,10 +135,10 @@ private struct MarkDownAsViewViewConfiguration: CanConfigureViews {
         guard let owner = owner, let markDownView = owner.markDownView else { return }
 
         let views: [String: Any] = [
-            "markDownView" : markDownView
+            "markDownView": markDownView
         ]
 
-        var constraints:[NSLayoutConstraint] = []
+        var constraints: [NSLayoutConstraint] = []
         constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[markDownView]|", options: [], metrics: [:], views: views)
         constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[markDownView]|", options: [], metrics: [:], views: views)
         owner.addConstraints(constraints)
@@ -156,10 +183,10 @@ private struct MarkDownAsAttributedStringViewConfiguration: CanConfigureViews {
         guard let owner = owner, let markDownView = owner.markDownView else { return }
 
         let views: [String: Any] = [
-            "markDownView" : markDownView
+            "markDownView": markDownView
         ]
 
-        var constraints:[NSLayoutConstraint] = []
+        var constraints: [NSLayoutConstraint] = []
         constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[markDownView]|", options: [], metrics: [:], views: views)
         constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[markDownView]|", options: [], metrics: [:], views: views)
         owner.addConstraints(constraints)

@@ -1,16 +1,23 @@
 PODS:
-  - markymark (7.1)
+  - markymark (9.1.3)
+  - SwiftLint (0.28.1)
 
 DEPENDENCIES:
   - markymark (from `../`)
+  - SwiftLint
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - SwiftLint
 
 EXTERNAL SOURCES:
   markymark:
-    :path: ../
+    :path: "../"
 
 SPEC CHECKSUMS:
-  markymark: 2dbd0f000579b1992d0e6355d5cdd83b097d03f7
+  markymark: 03e3e4d4ffa9978946ac4b6aa38214e87af88a21
+  SwiftLint: 7f5f7de0da74a649b16616cb5246ae323489656e
 
-PODFILE CHECKSUM: 702819c9a9352a2969fd49865aabe1f21e7c3404
+PODFILE CHECKSUM: ac26bbd0b2acca180dc458845f0951e758f55812
 
-COCOAPODS: 1.4.0
+COCOAPODS: 1.5.3
